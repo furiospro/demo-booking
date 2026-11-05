@@ -2,15 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\StoreBookingData;
+use App\Exceptions\BookingConflictException;
+use App\Exceptions\BookingInvalidIntervalException;
+use App\Exceptions\BookingOutsideWorkingHoursException;
+use App\Logging\BookingLoggerInterface;
 use App\Models\Booking;
 use App\Models\Room;
-use Carbon\Carbon;
+use App\Services\BookingService;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 class BookingController extends Controller
 {
+    public function __construct(
+        private readonly BookingService $bookingService,
+        private readonly BookingLoggerInterface $logger,
+    ) {}
+
     public function index(Request $request)
     {
         return Booking::where('user_id', $request->user()->id)
@@ -18,33 +30,42 @@ class BookingController extends Controller
             ->paginate(20);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, Authenticatable $user): JsonResponse
     {
-        $conflict = DB::select("SELECT id FROM bookings
-            WHERE room_id = {$request->room_id}
-            AND starts_at <= '{$request->ends_at}'
-            AND ends_at >= '{$request->starts_at}'");
+        $data = StoreBookingData::fromRequest($request);
+        
+        try {
+            $booking = $this->bookingService->createBooking($data, $user);
+        } catch (\Throwable $throwable) {
+            if ($throwable instanceof BookingConflictException
+                || $throwable instanceof BookingOutsideWorkingHoursException
+                || $throwable instanceof BookingInvalidIntervalException) {
+                throw $throwable;
+            }
 
-        if ($conflict) {
-            return response()->json(['error' => 'Комната занята'], 409);
+            $this->logger->error('Error booking creating', [
+                'error_msg' => $throwable->getMessage(),
+                'error_trace' => $throwable->getTraceAsString(),
+            ]);
+
+            return response()->json(['error' => 'Internal server error'], 500);
         }
 
-        $start = Carbon::parse($request->starts_at);
-        if ($start->hour < 9 || $start->hour >= 20) {
-            return response()->json(['error' => 'Нерабочее время'], 422);
-        }
-
-        $booking = Booking::create($request->all());
-
-        Log::withContext(['booking_id' => $booking->id]);
-        Log::channel('bookings')->info('Booking created');
-
-        return $booking;
+        return response()->json($booking, 201);
     }
 
-    public function destroy($id)
+    public function destroy(int $id, Authenticatable $user): Response
     {
-        Booking::findOrFail($id)->delete();
+        $booking = Booking::query()->findOrFail($id);
+        
+        // Удалить бронирование может только тот пользователь, который его создал.
+        Gate::forUser($user)->authorize('delete', $booking);
+        
+        $this->logger->info('Удаление записи ' . $booking->id, [
+            'user_id' => $user->getAuthIdentifier()
+        ]);
+
+        $booking->delete();
 
         return response()->noContent();
     }
