@@ -361,8 +361,8 @@ class BookingStoreTest extends TestCase
 
         $booking = Booking::query()->findOrFail($response->json('id'));
         
-        $this->assertSame('2026-11-06T07:00:00+00:00', $booking->starts_at->format('c'));
-        $this->assertSame('2026-11-06T08:00:00+00:00', $booking->ends_at->format('c'));
+        $this->assertSame('2026-11-06T07:00:00+00:00', $booking->starts_at->format(\DateTime::ATOM));
+        $this->assertSame('2026-11-06T08:00:00+00:00', $booking->ends_at->format(\DateTime::ATOM));
     }
 
     public function test_checks_working_hours_in_room_timezone(): void

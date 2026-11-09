@@ -14,7 +14,7 @@ class Booking extends Model
     /** @use HasFactory<BookingFactory> */
     use HasFactory;
     
-    protected $dateFormat = 'c';
+    protected $dateFormat = \DateTime::ATOM;
 
     protected function casts(): array
     {
