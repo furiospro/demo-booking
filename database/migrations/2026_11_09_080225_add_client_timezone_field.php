@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('bookings', function (Blueprint $table) {
             $table->dropColumn('client_starts_at');
             $table->dropColumn('client_ends_at');
-            $table->string('client_timezone')->default('Europe/Moscow');
+            $table->string('client_timezone')->default('+03:00');
         });
     }
 
