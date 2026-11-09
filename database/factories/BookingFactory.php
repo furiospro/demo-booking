@@ -22,8 +22,7 @@ class BookingFactory extends Factory
             'user_id' => User::factory(),
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
-            'client_starts_at' => $startsAt->copy(),
-            'client_ends_at' => $endsAt->copy(),
+            'client_timezone' => $this->faker->timezone(),
             'title' => fake()->sentence(3),
         ];
     }

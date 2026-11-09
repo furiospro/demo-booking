@@ -74,8 +74,7 @@ final class BookingService
                 'user_id' => $user->id,
                 'starts_at' => $startsAt,
                 'ends_at' => $endsAt,
-                'client_starts_at' => $clientStartsAt,
-                'client_ends_at' => $clientEndsAt,
+                'client_timezone' => $clientStartsAt->getTimezone()->getName(),
                 'title' => $data->title,
             ]);
 

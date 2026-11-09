@@ -7,6 +7,7 @@ use App\Models\Office;
 use App\Models\Room;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -353,18 +354,15 @@ class BookingStoreTest extends TestCase
         // 10:00+03:00 == 07:00 UTC == 14:00 в Новосибирске.
         $this->assertDatabaseHas('bookings', [
             'id' => $response->json('id'),
-            'starts_at' => '2026-11-06 14:00:00',
-            'ends_at' => '2026-11-06 15:00:00',
-            'client_starts_at' => '2026-11-06 10:00:00',
-            'client_ends_at' => '2026-11-06 11:00:00',
+            'starts_at' => '2026-11-06 07:00:00',
+            'ends_at' => '2026-11-06 08:00:00',
+            'client_timezone' => '+03:00',
         ]);
 
         $booking = Booking::query()->findOrFail($response->json('id'));
-
-        $this->assertSame('2026-11-06 14:00:00', $booking->starts_at->format('Y-m-d H:i:s'));
-        $this->assertSame('2026-11-06 15:00:00', $booking->ends_at->format('Y-m-d H:i:s'));
-        $this->assertSame('2026-11-06 10:00:00', $booking->client_starts_at->format('Y-m-d H:i:s'));
-        $this->assertSame('2026-11-06 11:00:00', $booking->client_ends_at->format('Y-m-d H:i:s'));
+        
+        $this->assertSame('2026-11-06T07:00:00+00:00', $booking->starts_at->format('c'));
+        $this->assertSame('2026-11-06T08:00:00+00:00', $booking->ends_at->format('c'));
     }
 
     public function test_checks_working_hours_in_room_timezone(): void

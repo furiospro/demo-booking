@@ -8,19 +8,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['room_id', 'user_id', 'starts_at', 'ends_at', 'client_starts_at', 'client_ends_at', 'title'])]
+#[Fillable(['room_id', 'user_id', 'starts_at', 'ends_at', 'client_timezone', 'title'])]
 class Booking extends Model
 {
     /** @use HasFactory<BookingFactory> */
     use HasFactory;
+    
+    protected $dateFormat = 'c';
 
     protected function casts(): array
     {
         return [
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
-            'client_starts_at' => 'datetime',
-            'client_ends_at' => 'datetime',
         ];
     }
 
